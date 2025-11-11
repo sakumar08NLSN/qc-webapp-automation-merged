@@ -328,7 +328,7 @@ with f1_tab:
         st.checkbox(all_market_check_keys["remove_montenegro"], key="remove_montenegro")
         st.checkbox(all_market_check_keys["remove_brazil_espn_fox"], key="remove_brazil_espn_fox")
         st.checkbox(all_market_check_keys["remove_switz_canal"], key="remove_switz_canal")
-        st.checkbox(all_market_check_keys["remove_viaplay_baltics"], key="remove_viaplay_baltics")
+        st.checkbox(all_marl_check_keys["remove_viaplay_baltics"], key="remove_viaplay_baltics")
         st.subheader("Recreations (Check for full market coverage)")
         st.checkbox(all_market_check_keys["recreate_viaplay"], key="recreate_viaplay")
         st.checkbox(all_market_check_keys["recreate_disney_latam"], key="recreate_disney_latam")
@@ -337,6 +337,7 @@ with f1_tab:
 
     if st.button("⚙️ Apply Selected Checks"):
         
+        # --- THIS WAS THE LINE WITH THE BUG ---
         active_checks = [key for key in all_market_check_keys.keys() if st.session_state[key]]
         
         if f1_bsr_file is None:
@@ -349,7 +350,6 @@ with f1_tab:
             st.error("⚠️ Duplication Channel Existence Check Selected: Please upload the BSA Macro Duplicator File.")
         else:
             with st.spinner(f"Applying {len(active_checks)} checks..."):
-                # --- THIS IS THE START OF THE TRY BLOCK ---
                 try:
                     # --- Save files temporarily ---
                     bsr_file_path = os.path.join(UPLOAD_FOLDER, f1_bsr_file.name)
@@ -378,7 +378,9 @@ with f1_tab:
                         macro_path=macro_path
                     ) 
                     
-                    status_summaries = validator.market_check_processor(checks)
+                    # --- THIS IS THE FIXED LINE ---
+                    status_summaries = validator.market_check_processor(active_checks)
+                    
                     df_processed = validator.df
                     
                     # --- Generate Output File ---
@@ -392,8 +394,19 @@ with f1_tab:
                     # --- Display Summaries ---
                     st.subheader("Processing Summary")
                     if status_summaries:
-                        df_summary = pd.DataFrame(status_summaries)
-                        st.dataframe(df_summary, use_container_width=True) # Simplified display
+                        # Re-format summaries for display
+                        display_summaries = []
+                        for s in status_summaries:
+                            if isinstance(s, dict):
+                                display_summaries.append({
+                                    "Check": s.get('check_key', 'N/A'),
+                                    "Status": s.get('status', 'N/A'),
+                                    "Description": s.get('description', 'N/A'),
+                                    "Details": str(s.get('details', 'No details'))
+                                })
+                        
+                        df_summary = pd.DataFrame(display_summaries)
+                        st.dataframe(df_summary, use_container_width=True)
                     else:
                         st.info("No specific operational summaries were returned.")
 
@@ -407,6 +420,5 @@ with f1_tab:
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         )
                 
-                # --- THIS IS THE CORRECTED 'except' BLOCK ---
                 except Exception as e:
                     st.error(f"❌ An error occurred during F1 checks: {e}")
