@@ -328,7 +328,8 @@ with f1_tab:
         st.checkbox(all_market_check_keys["remove_montenegro"], key="remove_montenegro")
         st.checkbox(all_market_check_keys["remove_brazil_espn_fox"], key="remove_brazil_espn_fox")
         st.checkbox(all_market_check_keys["remove_switz_canal"], key="remove_switz_canal")
-        st.checkbox(all_marl_check_keys["remove_viaplay_baltics"], key="remove_viaplay_baltics")
+        # --- THIS IS THE FIXED LINE ---
+        st.checkbox(all_market_check_keys["remove_viaplay_baltics"], key="remove_viaplay_baltics")
         st.subheader("Recreations (Check for full market coverage)")
         st.checkbox(all_market_check_keys["recreate_viaplay"], key="recreate_viaplay")
         st.checkbox(all_market_check_keys["recreate_disney_latam"], key="recreate_disney_latam")
@@ -337,7 +338,6 @@ with f1_tab:
 
     if st.button("⚙️ Apply Selected Checks"):
         
-        # --- THIS WAS THE LINE WITH THE BUG ---
         active_checks = [key for key in all_market_check_keys.keys() if st.session_state[key]]
         
         if f1_bsr_file is None:
@@ -378,7 +378,6 @@ with f1_tab:
                         macro_path=macro_path
                     ) 
                     
-                    # --- THIS IS THE FIXED LINE ---
                     status_summaries = validator.market_check_processor(active_checks)
                     
                     df_processed = validator.df
