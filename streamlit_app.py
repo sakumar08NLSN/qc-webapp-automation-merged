@@ -385,18 +385,13 @@ with main_qc_tab:
                     df = qc_general.period_check(df, start_date, end_date, col_map["bsr"])
                     df = qc_general.completeness_check(df, col_map["bsr"], rules)
                     df = qc_general.program_category_check(bsr_path, df, col_map, rules.get("program_category", {}), file_rules)
+                    df = qc_general.overlap_duplicate_daybreak_check(df, col_map["bsr"], rules.get("overlap_check", {}))
                     df = qc_general.check_event_matchday_competition(df, bsr_path, col_map, file_rules)
                     df = qc_general.market_channel_consistency_check(df, rosco_path, col_map, file_rules)
-                    df = qc_general.domestic_market_check(df, project_rules, col_map["bsr"], debug=False)
                     df = qc_general.rates_and_ratings_check(df, col_map["bsr"])
                     df = qc_general.country_channel_id_check(df, col_map["bsr"])
                     df = qc_general.client_lstv_ott_check(df, col_map["bsr"], rules.get("client_check", {}))
                     df = qc_general.rates_and_ratings_check(df, col_map["bsr"])  # backend does this twice
-
-                    # Duplicated Market BEFORE overlap/daybreak (as api.py)
-                    df = qc_general.duplicated_market_check(df, None, project_rules, col_map, file_rules, debug=False)
-
-                    df = qc_general.overlap_duplicate_daybreak_check(df, col_map["bsr"], rules.get("overlap_check", {}))
 
                     # Output
                     output_file = f"General_QC_Result_{os.path.splitext(bsr_file.name)[0]}.xlsx"
@@ -489,7 +484,7 @@ with laliga_qc_tab:
                     df = qc_general.domestic_market_check(df, project, col_map["bsr"], debug=False)
                     df = qc_general.duplicated_market_check(df, macro_path, project, col_map, file_rules, debug=False)
 
-                    df = qc_general.overlap_duplicate_daybreak_check(df, col_map["bsr"], rules.get("overlap_check", {}))
+                    #df = qc_general.overlap_duplicate_daybreak_check(df, col_map["bsr"], rules.get("overlap_check", {}))
 
                     # Output
                     output_file = f"Laliga_QC_Result_{os.path.splitext(ll_bsr.name)[0]}.xlsx"
