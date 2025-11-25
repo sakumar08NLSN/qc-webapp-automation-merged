@@ -1,63 +1,149 @@
-import pandas as pd
 import re
+import os
+import pandas as pd
+import numpy as np
+import logging
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 from openpyxl.utils.dataframe import dataframe_to_rows
 
+# Removed logging.basicConfig - it's now handled by app.py
 DATE_FORMAT = "%Y-%m-%d"
 
-# Excel color styles
 GREEN_FILL = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
 RED_FILL = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
 HEADER_FILL = PatternFill(start_color="BDD7EE", end_color="BDD7EE", fill_type="solid")
 
 
+# ----------------------------- Helpers -----------------------------
+def _find_column(df, candidates):
+    """
+    Case-insensitive lookup for a column in df.columns.
+    candidates: list of possible header names (strings) from config.
+    Returns first matching actual column name or None.
+    """
+    if not isinstance(candidates, list):
+        candidates = [candidates] # Handle single-string entries
+        
+    lower_map = {c.lower().strip(): c for c in df.columns}
+    for cand in candidates:
+        if cand is None:
+            continue
+        key = cand.lower().strip()
+        if key in lower_map:
+            return lower_map[key]
+    return None
+
+
+def _is_present(val):
+    """
+    Treat numeric values (including 0) as present.
+    For strings: strip whitespace and consider 'nan'/'none' as absent.
+    None/NaN -> False.
+    """
+    if val is None:
+        return False
+    try:
+        if pd.isna(val):
+            return False
+    except Exception:
+        pass
+    # Numeric -> present (including 0)
+    if isinstance(val, (int, float)) and not (isinstance(val, float) and pd.isna(val)):
+        return True
+    s = str(val).strip()
+    if s == "":
+        return False
+    if s.lower() in ("nan", "none"):
+        return False
+    return True
+
+
 # ----------------------------- 1️⃣ Detect Monitoring Period -----------------------------
 def detect_period_from_rosco(rosco_path):
-    df = pd.read_excel(rosco_path, header=None)
-    value_col = df.iloc[:, 1].astype(str)
-    period_row = value_col[value_col.str.contains("Monitoring Periods", na=False)]
-    if period_row.empty:
-        raise ValueError("Could not find 'Monitoring Periods' in Rosco file.")
-    text = period_row.iloc[0]
-    found = re.findall(r"\d{4}-\d{2}-\d{2}", text)
+    """
+    Attempts to find 'Monitoring Period' row anywhere in the Rosco file and extract two dates (YYYY-MM-DD).
+    Returns (start_date, end_date) as pandas.Timestamp.
+    Raises ValueError if not found or parsed.
+    """
+    # This function is heuristic-based and doesn't need config
+    x = pd.read_excel(rosco_path, header=None, dtype=str)
+    combined_text = x.fillna("").astype(str).apply(lambda row: " ".join(row.values), axis=1)
+    match_rows = combined_text[combined_text.str.contains("Monitoring Period", case=False, na=False)]
+    if match_rows.empty:
+        match_rows = combined_text[combined_text.str.contains("Monitoring Periods|Monitoring period", case=False, na=False)]
+    if match_rows.empty:
+        all_text = " ".join(combined_text.tolist())
+        found = re.findall(r"\d{4}-\d{2}-\d{2}", all_text)
+        if len(found) >= 2:
+            start_date = pd.to_datetime(found[0], format=DATE_FORMAT)
+            end_date = pd.to_datetime(found[1], format=DATE_FORMAT)
+            return start_date, end_date
+        raise ValueError("Could not find 'Monitoring Period' text in Rosco file.")
+
+    text_row = match_rows.iloc[0]
+    found = re.findall(r"\d{4}-\d{2}-\d{2}", text_row)
     if len(found) >= 2:
         start_date = pd.to_datetime(found[0], format=DATE_FORMAT)
         end_date = pd.to_datetime(found[1], format=DATE_FORMAT)
         return start_date, end_date
-    else:
-        raise ValueError("Could not parse monitoring period dates from Rosco file.")
+
+    found_alt = re.findall(r"\d{1,2}[/-]\d{1,2}[/-]\d{2,4}", text_row)
+    if len(found_alt) >= 2:
+        try:
+            start_date = pd.to_datetime(found_alt[0], dayfirst=False, errors="coerce")
+            end_date = pd.to_datetime(found_alt[1], dayfirst=False, errors="coerce")
+            if pd.notna(start_date) and pd.notna(end_date):
+                return start_date, end_date
+        except Exception:
+            pass
+
+    raise ValueError("Could not parse monitoring period dates from Rosco file.")
 
 
 # ----------------------------- 2️⃣ Load BSR -----------------------------
-def detect_header_row(bsr_path):
+def detect_header_row(bsr_path, bsr_cols):
     df_sample = pd.read_excel(bsr_path, header=None, nrows=200)
+    
+    # Use config columns to find the header
+    key_cols = [
+        bsr_cols.get('market', ['market'])[0],
+        bsr_cols.get('tv_channel', ['channel'])[0],
+        bsr_cols.get('date', ['date'])[0],
+        bsr_cols.get('start_time', ['start'])[0]
+    ]
+    
     for i, row in df_sample.iterrows():
         row_str = " ".join(row.dropna().astype(str).tolist()).lower()
-        if "region" in row_str and "market" in row_str and "broadcaster" in row_str:
+        # Find row that contains several key column names
+        if sum(col.lower() in row_str for col in key_cols) >= 2:
             return i
-        if "date" in row_str and ("utc" in row_str or "gmt" in row_str):
-            return i
+            
     raise ValueError("Could not detect header row in BSR file.")
 
 
-def load_bsr(bsr_path):
-    header_row = detect_header_row(bsr_path)
+def load_bsr(bsr_path, bsr_cols):
+    header_row = detect_header_row(bsr_path, bsr_cols)
     df = pd.read_excel(bsr_path, header=header_row)
     df.columns = [str(c).strip() for c in df.columns]
     return df
 
 
 # ----------------------------- 3️⃣ Period Check -----------------------------
-def period_check(df, start_date, end_date):
-    date_col = next((c for c in df.columns if "date" in str(c).lower()), None)
+def period_check(df, start_date, end_date, bsr_cols):
+    
+    date_col = _find_column(df, bsr_cols.get('date', ['date']))
+    
     if not date_col:
-        df["Within_Period_OK"] = True
-        df["Within_Period_Remark"] = ""
+        logging.warning("Period Check: 'date' column not found.")
+        df["Within_Period_OK"] = False
+        df["Within_Period_Remark"] = "Date column not found"
         return df
+        
     df["Date_checked"] = pd.to_datetime(df[date_col], errors="coerce").dt.date
     df["Within_Period_OK"] = df["Date_checked"].between(start_date.date(), end_date.date())
     df["Within_Period_Remark"] = df["Within_Period_OK"].apply(lambda x: "" if x else "Date outside monitoring period")
+    df = df.drop(columns=["Date_checked"], errors="ignore")
     return df
 
 
