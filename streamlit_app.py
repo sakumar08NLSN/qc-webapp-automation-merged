@@ -80,34 +80,21 @@ except:
     st.title("Nielsen QC Automation Portal")
 
 # Tabs
-home_tab, general_tab, laliga_tab, f1_tab, epl_tab = st.tabs([
-    "🏠 Home",
-    "🧪 General QC (9-Checks)",
-    "⚽ LaLiga QC (11-Checks)",
+general_tab, laliga_tab, f1_tab, epl_tab = st.tabs([
+    "🏠 General QC ",
+    "⚽ LaLiga QC ",
     "🏎️ F1 Market Checks",
     "🏴 EPL Checks"
 ])
 
 
-###########################################################
-#                    HOME TAB
-###########################################################
-with home_tab:
-    st.header("Welcome to the Nielsen Sports QC Automation Portal")
-    st.markdown("""
-    This tool runs **all QC pipelines locally**, exactly as in your backend `api.py`.
-    - No API calls  
-    - Same logic  
-    - Same outputs  
-    - Faster execution  
-    """)
 
 
 ###########################################################
-#                    GENERAL QC (9 CHECKS)
+#                    GENERAL QC
 ###########################################################
 with general_tab:
-    st.header("🧪 General QC Automation (9 Checks)")
+    st.header(" General QC Automation ")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -196,7 +183,7 @@ with general_tab:
 #                    LALIGA QC (11 CHECKS)
 ###########################################################
 with laliga_tab:
-    st.header("⚽ LaLiga QC Automation (11 Checks)")
+    st.header("⚽ LaLiga QC Automation ")
 
     c1, c2, c3 = st.columns(3)
     with c1:
