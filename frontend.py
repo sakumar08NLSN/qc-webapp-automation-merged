@@ -489,13 +489,9 @@ with f1_tab:
     st.write("---")
 
 
-<<<<<<< HEAD
-    # --- Run Processing Button  ---
-    if st.button("⚙️ Apply Selected Checks"):
-=======
+
     # --- Run Processing Button (UNTOUCHED) ---
     if st.button(" Apply Selected Checks"):
->>>>>>> 4df4bd37f29e5c80c5783fead917b3425e8e9605
         
         active_checks = [key for key in all_market_check_keys.keys() if st.session_state[key]]
         
