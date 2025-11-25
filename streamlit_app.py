@@ -7,7 +7,7 @@ import shutil
 import json
 from typing import Optional, List
 
-BACKEND_BASE_URL = os.environ.get("STREAMLIT_BACKEND_URL", "http://localhost:8000")
+BACKEND_BASE_URL = os.environ.get("STREAMLIT_BACKEND_URL", "https://super-duper-space-broccoli-7w6r4v7w5rg3rprj.github.dev/")
 BACKEND_URL = BACKEND_BASE_URL + "/api"
 
 
