@@ -1,11 +1,16 @@
 import streamlit as st
 import pandas as pd
+import requests
 import os
 import time
 import shutil
 import json
 import requests  # <-- FIX 1: Added missing import
 from typing import Optional, List
+
+BACKEND_BASE_URL = os.environ.get("STREAMLIT_BACKEND_URL", "http://localhost:8000")
+BACKEND_URL = BACKEND_BASE_URL + "/api"
+
 
 # --- Import ALL QC functions from ALL your files ---
 
@@ -90,11 +95,13 @@ except Exception:
 
 
 # --- Use Tabs for Clear Separation (MODIFIED) ---
-home_page_tab, main_qc_tab, laliga_qc_tab, f1_tab = st.tabs([
+
+home_page_tab, main_qc_tab, laliga_qc_tab, f1_tab , epl_tab= st.tabs([
     " Home Page", 
     " Main QC Automation", 
     " Laliga Specific QC", 
-    " F1 Market Specific Checks"
+    " F1 Market Specific Checks",
+    " EPL Specific Checks"
 ])
 
 # --- Define all market check keys globally for management ---
@@ -137,6 +144,10 @@ all_market_check_keys = {
 }
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4df4bd37f29e5c80c5783fead917b3425e8e9605
 with home_page_tab:
     # --- Custom CSS for Styling ---
     st.markdown(
@@ -533,7 +544,11 @@ with f1_tab:
     #     st.checkbox(all_market_check_keys["check_youtube_global"], key="check_youtube_global")
         
     #     st.subheader("Individual Broadcaster Confirmations")
+<<<<<<< HEAD
     #     st.checkbox(all_key["check_pan_mena"], key="check_pan_mena")
+=======
+    #     st.checkbox(all_market_check_keys["check_pan_mena"], key="check_pan_mena")
+>>>>>>> 4df4bd37f29e5c80c5783fead917b3425e8e9605
     #     st.checkbox(all_market_check_keys["check_china_tencent"], key="check_china_tencent")
     #     st.checkbox(all_market_check_keys["check_czech_slovakia"], key="check_czech_slovakia")
     #     st.checkbox(all_market_check_keys["check_ant1_greece"], key="check_ant1_greece")
@@ -702,4 +717,26 @@ with f1_tab:
                         st.error(f"❌ Backend Processing Error ({response.status_code}): {error_detail}")
 
                 except requests.exceptions.RequestException as e:
+<<<<<<< HEAD
                     st.error(f"❌ Connection Error: Could not reach the backend. Error: {e}")
+=======
+                    st.error(f"❌ Connection Error: Could not reach the backend. Error: {e}")
+
+with epl_tab:
+    # Use st.title, st.header, or st.markdown for clear visual separation
+    st.header("EPL Specific Checks")
+    
+    # Display the "Work in Progress" message
+    st.info("⚠️ **Work in Progress:** This tab is currently under development. Please check back later for the available checks and automation features for the English Premier League.")
+    
+    # You can optionally add a placeholder or a brief roadmap
+    st.subheader("Expected Features:")
+    st.markdown("""
+    * Verification of market types specific to the EPL (e.g., specific outrights).
+    * Check for correct team names and player mappings.
+    * Automated checks for specific data fields.
+    """)
+    
+    st.markdown("---")
+    st.markdown("Thank you for your patience!")
+>>>>>>> 4df4bd37f29e5c80c5783fead917b3425e8e9605
